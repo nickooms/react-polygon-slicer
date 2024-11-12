@@ -1,4 +1,4 @@
-import { Feature } from './Feature';
+import { Feature } from './Feature/Feature';
 
 export class FeatureCollection {
   static getAllCoordinates = ({ features }) =>

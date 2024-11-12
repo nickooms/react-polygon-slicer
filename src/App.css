@@ -2,6 +2,7 @@
   --color__wbn--kruispuntzone: #adadad;
   --color__wbn--wegsegment: #d6d6d6;
   --color__wgo--grens-zone-zwakke-weggebruiker: #bf00ff;
+  --color__wbn--split: #00ffff;
   --stroke-width: 0.5;
 }
 
@@ -13,6 +14,7 @@ svg {
 
 polygon,
 polyline {
+  fill: none;
   stroke-width: var(--stroke-width);
   stroke-opacity: 0.3;
   cursor: pointer;
@@ -34,8 +36,12 @@ polygon[data-lbltype='kruispuntzone'] {
 }
 
 polyline[data-lbltype='grens zone zwakke weggebruiker (wcz)'] {
-  fill: none;
   stroke: var(--color__wgo--grens-zone-zwakke-weggebruiker);
+}
+
+polygon[data-lbltype='split'] {
+  fill: var(--color__wbn--split);
+  stroke: black;
 }
 
 /* .App {
