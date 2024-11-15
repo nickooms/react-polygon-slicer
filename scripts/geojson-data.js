@@ -1,37 +1,39 @@
 import fs from 'fs/promises';
+import polygonsplitter from 'polygon-splitter';
 import { getStart, getEnd } from '../src/GeoJSON/Feature/LineString.js';
-import { feature, lineString } from '../src/GeoJSON/GeoJSON.js';
+import { feature, featureCollection, polygon, lineString } from '../src/GeoJSON/GeoJSON.js';
+import { BBox } from '../src/hooks/BBox.js';
 
 const PATH = 'public/geojson';
 const ENCODING = 'utf-8';
 
-const readFile = async (filename) =>
+const WGO_SIDEWALK_LBLTYPE = 'grens zone zwakke weggebruiker (wcz)';
+const WGO_PROPS = { lbltype: WGO_SIDEWALK_LBLTYPE };
+
+const readGeoJsonFile = async (filename) =>
   JSON.parse(await fs.readFile(`${PATH}/${filename}`, ENCODING));
 
-const writeFile = async (filename, data) =>
+const writeGeoJsonFile = async (filename, data) =>
   fs.writeFile(`${PATH}/${filename}`, JSON.stringify(data, null, 2), ENCODING);
 
 const pointsAreEqual = ([x1, y1], [x2, y2]) => x1 === x2 && y1 === y2;
 
-const lineHasStartPoint = (startPoint) => (line) =>
-  pointsAreEqual(startPoint, getStart(line));
+const lineHasStartPoint = (startPoint) => (line) => pointsAreEqual(startPoint, getStart(line));
 
-const lineHasEndPoint = (endPoint) => (line) =>
-  pointsAreEqual(endPoint, getEnd(line));
+const lineHasEndPoint = (endPoint) => (line) => pointsAreEqual(endPoint, getEnd(line));
 
 const main = async () => {
-  const wgo = await readFile('WGO.geojson');
+  const wgo = await readGeoJsonFile('WGO.geojson');
+  const wbn = await readGeoJsonFile('WBN.geojson');
 
-  const { features } = wgo;
-
-  const lines = features
-    .filter((line) => !features.find(lineHasEndPoint(getStart(line))))
+  const joinedLineStrings = wgo.features
+    .filter((line) => !wgo.features.find(lineHasEndPoint(getStart(line))))
     .map((line) => {
       const ids = [line.id];
       const coordinates = line.geometry.coordinates;
       let end = getEnd(line);
       while (end) {
-        const nextLine = features.find(lineHasStartPoint(end));
+        const nextLine = wgo.features.find(lineHasStartPoint(end));
         if (nextLine) {
           end = getEnd(nextLine);
           ids.push(nextLine.id);
@@ -41,17 +43,22 @@ const main = async () => {
         }
       }
       const id = ids.map((id) => id.replace('WGO.', '')).join('-');
-      return feature(`WGO.${id}`, lineString(coordinates), {
-        lbltype: 'grens zone zwakke weggebruiker (wcz)',
-      });
+      return feature(`WGO.${id}`, lineString(coordinates), WGO_PROPS);
     });
 
-  console.log(lines);
+  const wgoJoinedLineStrings = featureCollection(joinedLineStrings);
+  await writeGeoJsonFile('WGO-joined-LineStrings.geojson', wgoJoinedLineStrings);
 
-  await writeFile('WGO-joined.geojson', {
-    type: 'FeatureCollection',
-    features: lines,
-  });
+  const wgoSplit = featureCollection(
+    polygonsplitter(wbn.features[0], wgoJoinedLineStrings.features[0])
+      .geometry.coordinates.filter(
+        (coordinates) => BBox.from(feature('', polygon(coordinates))).width > 0
+      )
+      .map((coordinates, index) =>
+        feature(`WGO-split.${index}`, polygon(coordinates), { lbltype: 'kruispuntzone' })
+      )
+  );
+  await writeGeoJsonFile('WGO-split.geojson', wgoSplit);
 };
 
 main();

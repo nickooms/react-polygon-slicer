@@ -1,4 +1,4 @@
-import { getCoordinates } from '../GeoJSON/GeoJSON';
+import { getCoordinates } from '../GeoJSON/GeoJSON.js';
 
 export class BBox {
   #minX = Infinity;

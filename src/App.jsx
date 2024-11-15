@@ -1,12 +1,12 @@
 import polygonsplitter from 'polygon-splitter';
 import { SVG } from './SVG/index';
-import { useJoinedWGO } from './hooks/useJoinedWGO';
+import { useJoinedWGOMultiLineString } from './hooks/useJoinedWGOMultiLineString';
 import { useWBN } from './hooks/useWBN';
 import * as GeoJSON from './GeoJSON/GeoJSON';
 import './App.css';
 
 function App() {
-  const wgo = useJoinedWGO();
+  const wgo = useJoinedWGOMultiLineString();
   const wbn = useWBN();
 
   if ([wgo.status, wbn.status].includes('loading'))
